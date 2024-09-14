@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+from checks import checks_router
 
 app = FastAPI()
 
-@app.get("/status")
-async def status():
-    return {"status": "RUNNING"}
+app.include_router(checks_router)
