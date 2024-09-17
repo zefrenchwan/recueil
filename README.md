@@ -33,7 +33,18 @@ Paris is a capital city, then a city, then a location, then a physical entity.
 When asking for locations, you do not want to request "location", and "city" and "capital city" and ... 
 You want to receive cities when asked for locations because cities are a sort of location. 
 
+## How do I run it ? 
+
+1. create a `.env` file at the same level as the Dockerfile
+2. Set in there `DBUSER` and `DBPATH`
+3. Run script `./deploy.sh`
+
+
 ## FAQ / Comments
+
+### Is it prod ready ? 
+
+Depends on what you mean by prod ready, but please, audit this code and make it compliant within your organization security policy. 
 
 ### You said that using NLP models is not a good thing ! 
 
@@ -48,4 +59,10 @@ It will not replace a model, unless you work on a given specific corpus.
 1. First, because I like Python, and you may want to copy my design for your super fast project. This is why I used MIT license. 
 2. You may want to deploy more instances, or cache data. There are solutions for this issue. 
 3. I work on a problem, and I try code based solutions. Consider this code as a POC, not a final prod ready code
-4. Is it, really ? Like data evidence based ? 
+
+### Wait, there is no ORM ?
+
+This is a good question. 
+To me, coding in SQL with low-level access is really efficient and not that difficult. 
+So, you will find stored procedures and all a database may offer. 
+No ORM, then. 
