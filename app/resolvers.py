@@ -1,9 +1,7 @@
 import json
-import re
 import urllib.parse
 from psycopg.rows import class_row
 from dataclasses import dataclass
-from typing import Optional
 import falcon
 
 
