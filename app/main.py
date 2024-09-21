@@ -24,14 +24,13 @@ logger.info("database pool is up and running")
 
 # build core objects
 tag_solver = TagSolver(dao, logger)
+unbouded_solver = UnboundedSolver(dao, logger)
 values_appender = ValuesAppender(dao, logger)
-stats = TokenStats(dao, logger)
 
 # build app
 app = App()
 logger.info("Starting routes")
-#app.add_route('/check/{value}/', )
-app.add_route('/stats/', stats)
+app.add_route('/check/value/{value}/', unbouded_solver)
 app.add_route('/check/value/{value}/as/{tag}/', tag_solver)
 app.add_route('/add/value/{value}/as/{tag}/', values_appender)
 #app.add_route('/link/child/{child}/to/parent/{parent}/', )

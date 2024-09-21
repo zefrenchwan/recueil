@@ -18,6 +18,12 @@ class Processor:
         Given a string parameter, parses it
         """
         return urllib.parse.unquote(value).strip().lower()
+    
+    def parse(self, value:str) -> str:
+        """
+        Return value from a uri, as raw as possible
+        """
+        return urllib.parse.unquote(value).strip()
 
     
 class TokenStats(Processor):
@@ -65,7 +71,38 @@ class TagSolver(Processor):
                 parents = [parent.lower() for parent in node.tags]
                 parents.append(boundaries.lower())
                 if boundaries in parents:
+                    node.token_content = self.parse(value)
                     result.append(node.to_dict())
+            resp.media = json.dumps(result)
+            resp.status = falcon.HTTP_200
+
+
+class UnboundedSolver(Processor):
+    """
+    Search for value with no tag constraint
+    """
+    def __init__(self, dao, logger):
+        super().__init__(dao, logger)
+
+    def on_get(self, req, resp, value):
+        token = self.normalize(value)
+        self.logger.info(f"resolve {token}")
+        matches = []
+        try:
+            matches = self.dao.load(token)
+        except Exception as e:
+            self.logger.error("failed to load token " + str(token) + ":" + str(e))
+            resp.status = falcon.HTTP_500 
+            return
+        if len(matches) == 0:
+            self.logger.info(f"No match for {token}")
+            resp.status = falcon.HTTP_404
+        else:
+            result = []
+            resp.status = falcon.HTTP_200
+            for node in matches:
+                node.token_content = self.parse(value)
+                result.append(node.to_dict())
             resp.media = json.dumps(result)
             resp.status = falcon.HTTP_200
 
@@ -91,5 +128,5 @@ class ValuesAppender(Processor):
             resp.status = falcon.HTTP_200 
         except Exception as e:
             self.logger.error("failed to save token " + str(token) + ":" + str(e))
-            resp.status = falcon.HTTP_500 
+            resp.status = falcon.HTTP_500
                 

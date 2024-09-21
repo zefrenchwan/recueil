@@ -29,6 +29,7 @@ create table entities.links (
 create procedure entities.insert_value(p_name text, p_description text, p_tag text) language plpgsql as $$
 declare
     l_token_id int;
+    l_homonym_id int;
     l_tag_id int;
 begin 
     -- insert tag if not found, search is case insensitive
@@ -45,20 +46,10 @@ begin
         and TOK.token_content ilike p_name
     ) then 
         insert into entities.tokens(token_content) values (p_name) returning token_id into l_token_id;
-        insert into entities.homonyms(token_id, attributes) values (l_token_id, p_description); 
+        insert into entities.homonyms(token_id, attributes) values (l_token_id, p_description) returning homonym_id into l_homonym_id; 
+        insert into entities.links(homonym_id, tag_id) values (l_homonym_id, l_tag_id);
     end if;
 end; $$;
-
-
-create view entities.all_tokens(token_content, tag_name, counter)  as 
-select 
-TOK.token_content, ETA.name as tag_name, count(*) as counter
-from entities.tokens TOK  
-join entities.homonyms HOM on TOK.token_id = HOM.token_id
-join entities.links LIN on LIN.homonym_id = HOM.homonym_id
-join entities.tags ETA on ETA.tag_id = LIN.tag_id
-group by TOK.token_content, ETA.name;
-
 
 
 create function entities.load_entity(p_value text)

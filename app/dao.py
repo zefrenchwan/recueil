@@ -52,24 +52,6 @@ class Dao:
                 result.append(matching)
         return result
     
-    def dump(self) -> dict[str,dict[str, int]]:
-        """
-        Get all tokens, and for each one, related tags and counters
-        """
-        result = dict()
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
-            cursor.execute("select * from entities.all_tokens")
-            matches = cursor.fetchall()
-            for value in matches:
-                token = value.get("token_content")
-                tag = value.get("tag")
-                counter = value.get("counter")
-                previous = result.get(token, dict())
-                previous[tag] = counter
-                result[token] = previous
-        return result
-
-
     
     def add_node(self, token: str, attributes: str, tag: str):
         """
