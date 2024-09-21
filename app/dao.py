@@ -62,3 +62,13 @@ class Dao:
         self.check_expected_value(tag, str)
         with self.pool.connection() as conn, conn.cursor() as cursor, conn.transaction():
             cursor.execute('call entities.insert_value(%s, %s, %s);', (token, attributes, tag))
+
+
+    def add_link(self, child:str, parent:str):
+        """
+        Add a link into two tags, child inherits from parent
+        """
+        self.check_expected_value(child, str)
+        self.check_expected_value(parent, str)
+        with self.pool.connection() as conn, conn.cursor() as cursor, conn.transaction():
+            cursor.execute('call entities.insert_link(%s, %s);', (child, parent))

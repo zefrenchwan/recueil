@@ -130,3 +130,23 @@ class ValuesAppender(Processor):
             self.logger.error("failed to save token " + str(token) + ":" + str(e))
             resp.status = falcon.HTTP_500
                 
+
+
+class TagsLinker(Processor):
+    """
+    Adds inheritance link between two tags
+    """
+    def __init__(self, dao, logger):
+        super().__init__(dao, logger)
+
+    def on_post(self, req, resp, child, parent):
+        child = self.normalize(child)
+        parent = self.normalize(parent)
+        self.logger.info(f"linking {child} to {parent}")
+        try:
+            self.dao.add_link(child, parent)
+            resp.status = falcon.HTTP_200 
+        except Exception as e:
+            self.logger.error("failed to link " + str(child) + " to " + str(parent) + ":" + str(e))
+            resp.status = falcon.HTTP_500
+                

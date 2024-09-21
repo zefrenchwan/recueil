@@ -38,6 +38,11 @@ begin
         insert into entities.tags(name) values (p_tag) returning tag_id into l_tag_id;
     end if;
 
+    select token_id into l_token_id from entities.tokens where token_content like p_name;
+    if l_token_id is null then 
+        insert into entities.tokens(token_content) values (p_name) returning token_id into l_token_id;
+    end if;
+
     if not exists (
         select 1
         from entities.homonyms HOM
@@ -45,7 +50,6 @@ begin
         where HOM.attributes like p_description
         and TOK.token_content ilike p_name
     ) then 
-        insert into entities.tokens(token_content) values (p_name) returning token_id into l_token_id;
         insert into entities.homonyms(token_id, attributes) values (l_token_id, p_description) returning homonym_id into l_homonym_id; 
         insert into entities.links(homonym_id, tag_id) values (l_homonym_id, l_tag_id);
     end if;
@@ -109,3 +113,27 @@ begin
     delete from temp_walks where walk_id = l_walk_id;
     return; 
 end;$$;
+
+
+create procedure entities.insert_link(p_child text, p_parent text) language plpgsql as $$
+declare 
+    l_child_id int;
+    l_parent_id int;
+begin 
+    select tag_id into l_child_id from entities.tags where name ilike p_child;
+    select tag_id into l_parent_id from entities.tags where name ilike p_parent;
+    if l_child_id is null then 
+        insert into entities.tags(name) values (p_child) returning tag_id into l_child_id;
+    end if; 
+
+    if l_parent_id is null then 
+        insert into entities.tags(name) values (p_parent) returning tag_id into l_parent_id;
+    end if;
+
+    if not exists (
+        select 1 from  entities.inheritances 
+        where child_id = l_child_id and parent_id = l_parent_id
+    ) then 
+        insert into entities.inheritances(child_id, parent_id) values (l_child_id, l_parent_id);
+    end if;
+end; $$;
