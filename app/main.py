@@ -1,12 +1,13 @@
 import os
 from falcon import App
 from psycopg_pool import ConnectionPool
-from resolvers import TagSolver
-from updaters import ValuesAppender
+from processors import *
+from dao import Dao
 from atexit import register
 import logging 
 
 # logging
+logging.basicConfig(format='%(levelname)s %(asctime)s \t %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger('recueil')
 logger.setLevel(logging.DEBUG)
 log_handler = logging.FileHandler('logs/recueil.log')
@@ -16,16 +17,22 @@ logger.addHandler(log_handler)
 # properties settings
 db_url = os.getenv("DB_URL")
 # build base objects
-pool = ConnectionPool(min_size = 2, max_size = 4, open=True, conninfo=db_url)
+pool = ConnectionPool(min_size = 1, max_size = 4, open=True, conninfo=db_url)
 register(pool.close)
+dao = Dao(pool, logger)
+logger.info("database pool is up and running")
 
 # build core objects
-tag_solver = TagSolver(pool)
-values_appender = ValuesAppender(pool)
+tag_solver = TagSolver(dao, logger)
+values_appender = ValuesAppender(dao, logger)
+stats = TokenStats(dao, logger)
 
 # build app
 app = App()
+logger.info("Starting routes")
 #app.add_route('/check/{value}/', )
+app.add_route('/stats/', stats)
 app.add_route('/check/value/{value}/as/{tag}/', tag_solver)
 app.add_route('/add/value/{value}/as/{tag}/', values_appender)
 #app.add_route('/link/child/{child}/to/parent/{parent}/', )
+logger.info("Server is up")

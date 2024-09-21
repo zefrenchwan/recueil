@@ -1,12 +1,3 @@
-create schema auths;
-
-create table auths.users (
-    user_id serial primary key, 
-    login text not null unique, 
-    active bool not null default true,
-    hash_pwd text not null
-);
-
 create schema entities;
 
 create table entities.tags (
@@ -31,7 +22,7 @@ create table entities.homonyms (
 );
 
 create table entities.links (
-    token_id int not null references entities.tokens(token_id),
+    homonym_id int not null references entities.homonyms(homonym_id),
     tag_id int not null references entities.tags(tag_id)
 );
 
@@ -50,7 +41,7 @@ begin
         select 1
         from entities.homonyms HOM
         join entities.tokens TOK on TOK.token_id = HOM.token_id
-        where HOM.attributes = p_description
+        where HOM.attributes like p_description
         and TOK.token_content ilike p_name
     ) then 
         insert into entities.tokens(token_content) values (p_name) returning token_id into l_token_id;
@@ -58,16 +49,72 @@ begin
     end if;
 end; $$;
 
+
+create view entities.all_tokens(token_content, tag_name, counter)  as 
+select 
+TOK.token_content, ETA.name as tag_name, count(*) as counter
+from entities.tokens TOK  
+join entities.homonyms HOM on TOK.token_id = HOM.token_id
+join entities.links LIN on LIN.homonym_id = HOM.homonym_id
+join entities.tags ETA on ETA.tag_id = LIN.tag_id
+group by TOK.token_content, ETA.name;
+
+
+
 create function entities.load_entity(p_value text)
-returns table(token_content text, attributes text, tag text, parents text[]) language plpgsql as $$
+returns table(token_content text, attributes text, tags text[]) language plpgsql as $$
 declare 
+    l_walk_id text;
+    l_size_before bigint;
+    l_size_after bigint;
 begin 
+
+    -- create temp table if necessary to deal with the 
+    create temporary table if not exists temp_walks(walk_id text, homonym_id int, tag_id int);
+    -- insert first level data  
+    select gen_random_uuid ()::text into l_walk_id;
+    insert into temp_walks(walk_id, homonym_id, tag_id)
+    select l_walk_id, HOM.homonym_id, LIN.tag_id
+    from entities.homonyms HOM
+    join entities.tokens TOK on TOK.token_id = HOM.token_id
+    join entities.links LIN on LIN.homonym_id = HOM.homonym_id
+    where TOK.token_content ilike p_value;
+
+    
+    -- then, walkthrough
+    loop 
+        select count(*) into l_size_before from temp_walks where walk_id = l_walk_id;
+
+        insert into temp_walks(walk_id, homonym_id, tag_id) 
+        select l_walk_id, TWA.homonym_id, INH.parent_id 
+        from entities.inheritances INH 
+        join temp_walks TWA on TWA.tag_id = INH.child_id 
+        where TWA.walk_id = l_walk_id 
+        and not exists (
+            select 1 
+            from entities.inheritances INN_INH
+            where TWA.tag_id = INN_INH.parent_id
+            and INH.child_id = INN_INH.child_id
+        );
+
+        select count(*) into l_size_after from temp_walks where walk_id = l_walk_id;
+        exit when l_size_after <= l_size_before;
+    end loop;
+    
     -- to complete later 
     return query 
-        select 
-        null::text as token_content, 
-        null::text as attributes, 
-        null as tag, 
-        array[]::text[] as parents  
-        where 1 != 1;
+        with all_matches as (
+            select TOK.token_content, HOM.attributes, TAG.name
+            from temp_walks TWA
+            join entities.homonyms HOM on HOM.homonym_id = TWA.homonym_id
+            join entities.tokens TOK on TOK.token_id = HOM.token_id
+            join entities.tags TAG on TAG.tag_id = TWA.tag_id 
+            where TWA.walk_id = l_walk_id
+        )
+        select AMA.token_content, AMA.attributes, array_agg(AMA.name) as tags 
+        from all_matches AMA
+        group by AMA.token_content, AMA.attributes; 
+
+    delete from temp_walks where walk_id = l_walk_id;
+    return; 
 end;$$;
