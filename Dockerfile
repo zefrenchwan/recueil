@@ -4,6 +4,7 @@ COPY requirements.txt /app/
 RUN pip install gunicorn 
 RUN pip install --requirement /app/requirements.txt
 COPY app/ /app/
+COPY bootstrap/ /storage/bootstrap/
 VOLUME logs/ /app/logs/
 WORKDIR /app/
 EXPOSE 8000

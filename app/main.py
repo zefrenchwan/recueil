@@ -1,10 +1,13 @@
 import os
+import sys
 from falcon import App
 from psycopg_pool import ConnectionPool
 from processors import *
+from bootstrapper import Bootstrapper
 from dao import Dao
 from atexit import register
 import logging 
+import traceback
 
 # logging
 logging.basicConfig(format='%(levelname)s %(asctime)s \t %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -27,6 +30,18 @@ tag_solver = TagSolver(dao, logger)
 unbouded_solver = UnboundedSolver(dao, logger)
 values_appender = ValuesAppender(dao, logger)
 tags_linker = TagsLinker(dao, logger)
+
+#bootstrap app data
+logger.info("Loading base data")
+loader = Bootstrapper(dao, logger)
+try:
+    loader.load("/storage/bootstrap/")
+except Exception as e: 
+    logger.fatal("loading failed")
+    logger.fatal(str(e))
+    logger.fatal(traceback.format_exc())
+    sys.exit(3)       
+
 
 # build app
 app = App()

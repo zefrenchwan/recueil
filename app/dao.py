@@ -1,5 +1,3 @@
-import json
-import urllib.parse
 from psycopg.rows import class_row, dict_row
 from dataclasses import dataclass
 from typing import Any
@@ -62,6 +60,15 @@ class Dao:
         self.check_expected_value(tag, str)
         with self.pool.connection() as conn, conn.cursor() as cursor, conn.transaction():
             cursor.execute('call entities.insert_value(%s, %s, %s);', (token, attributes, tag))
+
+
+    def add_tag(self, name:str):
+        """
+        Add a tag if not already here
+        """
+        self.check_expected_value(name, str)
+        with self.pool.connection() as conn, conn.cursor() as cursor, conn.transaction():
+            cursor.execute('call entities.insert_tag(%s);', [name])
 
 
     def add_link(self, child:str, parent:str):

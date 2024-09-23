@@ -1,0 +1,16 @@
+[
+    {
+        "token":"Paris",
+        "tag":"Capital",
+        "content":{
+            "Country":"France"
+        }
+    },
+    {
+        "token":"Tiramisu",
+        "tag":"Dessert",
+        "content": {
+            "Origin":"Italy"
+        }
+    }
+]

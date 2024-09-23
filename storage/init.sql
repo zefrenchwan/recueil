@@ -80,17 +80,24 @@ begin
     loop 
         select count(*) into l_size_before from temp_walks where walk_id = l_walk_id;
 
+        with all_parents_links as (
+            select TWA.homonym_id, INH.parent_id 
+            from entities.inheritances INH 
+            join temp_walks TWA on TWA.tag_id = INH.child_id 
+            where TWA.walk_id = l_walk_id     
+        ), existing_links as (
+            select ETA.homonym_id, ETA.tag_id 
+            from temp_walks ETA 
+            where ETA.walk_id = l_walk_id 
+        ), new_links as (
+            select APL.homonym_id, APL.parent_id as tag_id 
+            from all_parents_links APL 
+            left join existing_links EXL on APL.homonym_id = EXL.homonym_id and APL.parent_id = EXL.tag_id
+            where EXL.homonym_id is null
+        )
         insert into temp_walks(walk_id, homonym_id, tag_id) 
-        select l_walk_id, TWA.homonym_id, INH.parent_id 
-        from entities.inheritances INH 
-        join temp_walks TWA on TWA.tag_id = INH.child_id 
-        where TWA.walk_id = l_walk_id 
-        and not exists (
-            select 1 
-            from entities.inheritances INN_INH
-            where TWA.tag_id = INN_INH.parent_id
-            and INH.child_id = INN_INH.child_id
-        );
+        select l_walk_id, NLI.homonym_id, NLI.tag_id
+        from new_links NLI;
 
         select count(*) into l_size_after from temp_walks where walk_id = l_walk_id;
         exit when l_size_after <= l_size_before;
@@ -99,7 +106,7 @@ begin
     -- to complete later 
     return query 
         with all_matches as (
-            select TOK.token_content, HOM.attributes, TAG.name
+            select distinct TOK.token_content, HOM.attributes, TAG.name
             from temp_walks TWA
             join entities.homonyms HOM on HOM.homonym_id = TWA.homonym_id
             join entities.tokens TOK on TOK.token_id = HOM.token_id
@@ -113,6 +120,17 @@ begin
     delete from temp_walks where walk_id = l_walk_id;
     return; 
 end;$$;
+
+
+create procedure entities.insert_tag(p_name text) language plpgsql as $$
+begin 
+    -- insert on conflict would allow different case values ("city", "CITY")
+    if not exists (
+        select 1 from entities.tags where name ilike p_name
+    ) then 
+        insert into entities.tags(name) values (p_name);
+    end if; 
+end; $$;
 
 
 create procedure entities.insert_link(p_child text, p_parent text) language plpgsql as $$

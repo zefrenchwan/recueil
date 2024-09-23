@@ -36,15 +36,35 @@ You want to receive cities when asked for locations because cities are a sort of
 ## How do I run it ? 
 
 1. create a `.env` file at the same level as the Dockerfile
-2. Set in there `DBUSER` and `DBPATH`
+2. Set in there `DBUSER` and `DBPASS` for auth, `DBNAME` for database name
 3. Run script `./deploy.sh`
+
+### I want custom data, not an empty database
+
+Sure ! 
+Simple, there is a `bootstrap` folder that contains csv files and json files. 
+Put your data in it:
+* in `json` files, follow the example structure to add your own data, note that `content` is an object
+* in `csv` files, put your own inheritance tree. Structure is parent then child, left blanks mean 'same as the upper line' 
 
 
 ## FAQ / Comments
 
 ### Is it prod ready ? 
 
-Depends on what you mean by prod ready, but please, audit this code and make it compliant within your organization security policy. 
+Nope, because rebooting means losing all pg data. 
+It is useful for me to test my code, not useful at all for you.
+So, that would be the first change you want to make. 
+Then, security audit. 
+So far, there is no auth at all. 
+You may want to secure this data
+
+### I want to export data once registered in the database
+
+Probably not. 
+You want to change the docker file to keep the stored data. 
+My project is a POC, yours may not be. 
+
 
 ### You said that using NLP models is not a good thing ! 
 
@@ -66,3 +86,14 @@ This is a good question.
 To me, coding in SQL with low-level access is really efficient and not that difficult. 
 So, you will find stored procedures and all a database may offer. 
 No ORM, then. 
+
+
+### Dude, come on, use a graph database ! 
+
+So far, the one I used was slower than my beloved postgresql. 
+
+
+### Dude, come on, use a cache ! 
+
+Might be an idea, but you would need to store the tree as is. 
+Interesting, maybe on a next project ! 
