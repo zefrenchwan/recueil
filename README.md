@@ -5,12 +5,19 @@ API to type words ("Paris" -> "city")
 Copyright zefrenchwan, 2024
 MIT license
 
-## What problems do you work on ? 
+## TLDR
 
-There are three current limits when looking for data: 
-1. Time management. Looking for a dead person in a search does not mean the same as for a living one. I made `Patterns` for that
-2. Data recognition for some specific values. You may want precise, hard coded results sometimes because your model is not always sufficient 
-3. Looking for typed values, because usually you know the type of a data. 
+1. Webapp to get and put data you ask for. Not just a cache, there is type inheritance and type inference
+2. Put data in bootstrap folder, change my config if necessary
+3. Create an env file and put values for `DBUSER`, `DBPASS` and `DBNAME`
+4. Launch `deploy.sh`
+5. Use it, for instance: `curl http://localhost:8000/check/value/paris/as/city/`  
+
+
+## What would be the typical use case for this project ? 
+
+1. Data recognition for some specific values. You may want precise, hard coded results sometimes because your model is not always sufficient 
+2. Looking for typed values, because usually you know the type of a data. 
 
 ### Improve recognition of specific tokens 
 NLP models (spaCy for instance) tend to learn from corpus and then recognize what *looks like* a named entity. 
@@ -27,10 +34,10 @@ You need a tool that contains "hard coded information":
 Assume you ask for a word, "Paris" for instance. 
 It matches the first name of a famous american person, a city in France, music albums, etc. 
 Why would you load all those entries when you know that you ask for a city ? 
-It sounds like a better option to look for `myaddr/CITY/Paris` than `myaddr/Paris` and then filter on the client side. 
+It sounds like a better option to look for `/check/value/Paris/as/CITY/` than `/check/value/Paris/` and then filter on the client side. 
 Still, we may do better. 
 Paris is a capital city, then a city, then a location, then a physical entity. 
-When asking for locations, you do not want to request "location", and "city" and "capital city" and ... 
+When asking for locations, you do not want to request `location`, and `city` and `capital` and ... 
 You want to receive cities when asked for locations because cities are a sort of location. 
 
 ## How do I run it ? 
@@ -38,6 +45,13 @@ You want to receive cities when asked for locations because cities are a sort of
 1. create a `.env` file at the same level as the Dockerfile
 2. Set in there `DBUSER` and `DBPASS` for auth, `DBNAME` for database name
 3. Run script `./deploy.sh`
+
+### Available endpoints
+
+1. `/check/value/{value}/` will return information for that value, no matter the type 
+2. `/check/value/{value}/as/{tag}/` will return information for that value, filtered as instances of `tag` or its subclasses
+3. `/add/value/{value}/as/{tag}/` will add `value` as `tag`. It changes values, not the inheritance tree. Tag may be stored if not already here
+4. `/link/child/{child}/to/parent/{parent}/` will add the link child -> parent, may add child or parent if not already inserted
 
 ### I want custom data, not an empty database
 
